@@ -1,4 +1,4 @@
-# cute_dsl_kernels
+# CuTe DSL Kernels
 CuTe DSL Kernels replicating NVIDIA's CUTLASS implementations.
 
 ## Kernel 00: Blackwell FMHA
