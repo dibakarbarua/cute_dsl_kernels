@@ -9,3 +9,8 @@ CuTe DSL Kernels replicating NVIDIA's CUTLASS implementations.
    - Fixed Length Sequence
    - No masking
    - Same Sequence Length across batches
+- Useful examples from NVIDIA using CuTeDSL:
+   - [Dense GEMM](https://github.com/NVIDIA/cutlass/blob/main/examples/python/CuTeDSL/blackwell/dense_gemm.py)
+   - [FMHA](https://github.com/NVIDIA/cutlass/blob/main/examples/python/CuTeDSL/blackwell/fmha.py)
+- Tutorial Notebooks:
+   - [NVIDIA Notebooks](https://github.com/NVIDIA/cutlass/tree/main/examples/python/CuTeDSL/notebooks)
