@@ -330,9 +330,20 @@ def host_function(
         tcgen05.OperandMajorMode.K,
     )
 
+    #### --- MMA Atom Construction --- ####
+    # MMA involves 4 tensors: D = A @ B + C
+    # The MMA Atom captures the Operation (Number of Regs for each tensor) 
+    # ... and the Traits:
+    # ...... 1.) Types per tensor
+    # ...... 2.) Thread Layout [MMA Local thread_idx -> thread_hierarchy_idx mapping]
+    # ...... 3.) TV Layouts per tensor
+    # ...... 4.) MMA Shape (M, N, K)
+   
     tiled_mma = cute.make_tiled_mma(op)
 
-    # Construct SMEM layouts for A and B
+    #### --- Construct SMEM layouts for A and B --- ###
+    # mma_tiler_mnk = (128, 256, 64) -> CTA Tiler
+    # SMEM Layout of A -> (m, k, stages) -> (128, 64, 4)
     a_smem_layout = sm100_utils.make_smem_layout_a(
         tiled_mma,
         mma_tiler_mnk,
@@ -347,11 +358,6 @@ def host_function(
     )
     a_smem_layout_one_stage = cute.select(a_smem_layout, mode=[0, 1, 2])
     b_smem_layout_one_stage = cute.select(b_smem_layout, mode=[0, 1, 2])
-    
-    cute.print("a smem layout = {}", a_smem_layout)
-    cute.print("a smem layout single stage = {}", a_smem_layout_one_stage)
-    cute.print("b smem layout = {}", b_smem_layout)
-    cute.print("b smem layout single stage = {}", b_smem_layout_one_stage)
 
     # Construct TMA load atoms
     op = cute.nvgpu.cpasync.CopyBulkTensorTileG2SOp(tcgen05.CtaGroup.ONE)
