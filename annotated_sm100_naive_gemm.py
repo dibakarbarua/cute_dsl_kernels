@@ -350,6 +350,8 @@ def host_function(
     #### --- Construct SMEM layouts for A and B --- ###
     # mma_tiler_mnk = (128, 256, 64) -> CTA Tiler
     # SMEM Layout of A -> (m, k, stages) -> (128, 64, 4)
+    # Note: MMA Atom is passed to calculate swizzled layout ...
+    # ... this is a composed layout of Sw(L(c))
     a_smem_layout = sm100_utils.make_smem_layout_a(
         tiled_mma,
         mma_tiler_mnk,
