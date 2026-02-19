@@ -12,17 +12,21 @@ from cutlass.cute.runtime import from_dlpack
 '''
 ## Structure of the Kernel
 
-1. **Prologue**: The phase before the first MMA instructions. It usually defines, fetches, allocates, partitions or calculates necessary components (listed below). What else, load multiple stages of data ahead of the first MMA to help hide GMEM latency.
+1. **Prologue**: The phase before the first MMA instructions. It usually defines, fetches, allocates, partitions or calculates necessary components (listed below). 
+   What else, load multiple stages of data ahead of the first MMA to help hide GMEM latency.
    - Indexing
      * `block_idx` (bidx, bidy): Block index in the grid
      * `mma_coord_mnk`: The location of which block the current MMA unit will calculate (see details in figure 1)
-     * `thread_idx` (tidx): Thread index within a block (0 to threads_per_cta - 1). We need this to slice the partition of tensor memory for each thread in a block (see details in [PTX Document 9.7.16.2.3.1 Memory Layout](https://docs.nvidia.com/cuda/parallel-thread-execution/#tcgen05-memory-layout))
+     * `thread_idx` (tidx): Thread index within a block (0 to threads_per_cta - 1). We need this to slice the partition of tensor memory for each thread in a block 
+     (see details in [PTX Document 9.7.16.2.3.1 Memory Layout](https://docs.nvidia.com/cuda/parallel-thread-execution/#tcgen05-memory-layout))
      * `warp_idx`: As TMA & tcgen05.mma only needs one thread to issue, some code only needs to execute by warp 0
    - Allocation
      * `smem` (storage, sA, sB): Allocate necessary smem usage for pipelines, A/B smem tensors as input of tcgen05.mma
      * `tmem`: Allocate necessary tmem usage for Acc
    - Pipeline (see more details in async_pipeline.ipynb)
-     * `PipelineTmaUmma`: Tma & tcgen05.mma units are async. PipelineTmaUmma helps notify: 1. tcgen05.mma when TMA fills A/B buffers to full; 2. TMA when tcgen05.mma consumes A/B buffer to empty
+     * `PipelineTmaUmma`: Tma & tcgen05.mma units are async. PipelineTmaUmma helps notify: 
+     1. tcgen05.mma when TMA fills A/B buffers to full; 
+     2. TMA when tcgen05.mma consumes A/B buffer to empty
      * `PipelineUmmaAsync`: It helps threads when tcgen05.mma finish the accumulation and Acc is ready
      * `Barrier initialization`: barrier initialization work is done inside the pipeline create functions
    - Partition
@@ -32,7 +36,8 @@ from cutlass.cute.runtime import from_dlpack
    - TMA descriptor prefetch
      * `cpasync.prefetch_descriptor`: helps shorten the latency of access tma descrptor, i.e. tma_atom_a, tma_atom_b
 
-2. **Mainloop**: The phase that carries out the main computation of GEMM. It's usually organized as a loop to iterate blocks in K dim for accumulation. The loop body contains:
+2. **Mainloop**: The phase that carries out the main computation of GEMM. It's usually organized as a loop to iterate blocks in K dim for accumulation. 
+   The loop body contains:
     - `Data prefetch` with a fixed stride (ab_stage - 1) ahead of current K block
     - `MMA computation` for current K block
 
@@ -44,14 +49,15 @@ from cutlass.cute.runtime import from_dlpack
     - `Storing`: TMA or st.global to store out
     - `TMEM deallocation`: Deallocate tmem for Acc buffer
     
-    Usually, we subtile the acc buffer to save resources of registers & smem (if using TMA to store C). For our mma_tiler (128, 256), each thread needs 256 registers if no subtiling. Besides, better instruction-level parallelism for interleavely issuing tcgen05.ld, data conversion & st.global.
+    Usually, we subtile the acc buffer to save resources of registers & smem (if using TMA to store C). 
+    For our mma_tiler (128, 256), each thread needs 256 registers if no subtiling. 
+    Besides, better instruction-level parallelism for interleavely issuing tcgen05.ld, data conversion & st.global.
 
-``` python
+        python
         for i in cutlass.range(cute.size(tDtC, mode=[2])):
             cute.copy(tmem_tiled_copy, tDtC[None, None, i], tCrAcc)
             tCrC.store(tCrAcc.load().to(io_dtype))
             cute.autovec_copy(tCrC, tDgC[None, None, i])
-```
 '''
 
 @cute.struct
